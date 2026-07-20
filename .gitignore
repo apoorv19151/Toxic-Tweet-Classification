@@ -1,14 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
 .venv/
 .env
-__pycache__/
-*.pyc
-*.pyo
-.ipynb_checkpoints/
-data/raw/*.csv
-data/processed/*.csv
-data/embeddings/
-*.pt
-*.pth
-*.pkl
+
+# macOS
 .DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Raw dataset
+data/raw/
+
+# Large pretrained embeddings
+data/embeddings/
+
+# Large DistilBERT checkpoint
+models/distilbert/model.safetensors
 
