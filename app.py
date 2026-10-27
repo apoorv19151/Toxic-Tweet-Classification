@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from src.inference import (
@@ -31,10 +31,25 @@ def home():
 )
 
 def classify(request: PredictionRequest):
-    prediction = predict(
-        request.text,
-        model_name=request.model,
-    )
+    text = request.text.strip()
+
+    if not text:
+        raise HTTPException(
+            status_code=400,
+            detail="Text cannot be empty.",
+        )
+        
+    try:
+        prediction = predict(
+            request.text,
+            model_name=request.model,
+        )
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e),
+        )
 
     return PredictionResponse(
         prediction=prediction

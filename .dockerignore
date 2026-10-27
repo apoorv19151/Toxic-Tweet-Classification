@@ -1,0 +1,15 @@
+.git
+.gitignore
+
+testenv
+.venv
+__pycache__
+*.pyc
+
+notebooks
+plots
+tests
+
+README.md
+
+data/

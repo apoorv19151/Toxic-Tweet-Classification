@@ -1,10 +1,12 @@
 # Python
 __pycache__/
 *.py[cod]
+*.pyo
 
 # Virtual environments
 .venv/
 .env
+testenv/
 
 # macOS
 .DS_Store
@@ -24,4 +26,7 @@ data/embeddings/
 
 # Large DistilBERT checkpoint
 models/distilbert/model.safetensors
+
+# Logs
+*.log
 
