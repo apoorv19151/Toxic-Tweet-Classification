@@ -29,6 +29,9 @@ NUM_LAYERS = 2
 DROPOUT = 0.5
 NUM_CLASSES = 6
 
+HF_MODEL_ID = "singhapoorv82/cyberbullying-distilbert"
+HF_MODEL_REVISION = "04257272d9a652dd1efb4ed50310752ad36607be"
+
 DEFAULT_MODEL = "lr_tfidf"
 SUPPORTED_MODELS = {
     "lr_tfidf",
@@ -49,7 +52,6 @@ _distilbert_tokenizer = None
 def _load_classical():
     global _lr_model
     global _tfidf_vectorizer
-    global _label_mapping
 
     if _lr_model is None:
         _lr_model = joblib.load(MODEL_PATH / "classical/lr_tfidf.pkl")
@@ -57,15 +59,7 @@ def _load_classical():
     if _tfidf_vectorizer is None:
         _tfidf_vectorizer = joblib.load(MODEL_PATH / "classical/tfidf_vectorizer.pkl")
 
-    if _label_mapping is None:
-        label2id = joblib.load(MODEL_PATH / "classical/label_mapping.pkl")
-
-        _label_mapping = {
-            value: key
-            for key, value in label2id.items()
-        }
-
-    return _lr_model, _tfidf_vectorizer, _label_mapping
+    return _lr_model, _tfidf_vectorizer, _load_labels()
 
 def _load_bilstm(model_name: str):
     global _bilstm_glove
@@ -129,19 +123,33 @@ def _load_distilbert():
 
     if _distilbert_tokenizer is None:
         _distilbert_tokenizer = AutoTokenizer.from_pretrained(
-            MODEL_PATH / "distilbert"
+            HF_MODEL_ID,
+            revision=HF_MODEL_REVISION
         )
     
     if _distilbert_model is None:
         _distilbert_model = AutoModelForSequenceClassification.from_pretrained(
-            MODEL_PATH / "distilbert"
+            HF_MODEL_ID,
+            revision=HF_MODEL_REVISION
         )
 
-    _distilbert_model.to(DEVICE)
-
-    _distilbert_model.eval()
+        _distilbert_model.to(DEVICE)
+        _distilbert_model.eval()
 
     return _distilbert_model, _distilbert_tokenizer
+
+def _load_labels():
+    global _label_mapping
+
+    if _label_mapping is None:
+        label2id = joblib.load(
+            MODEL_PATH / "classical/label_mapping.pkl"
+        )
+        _label_mapping = {
+            value: key for key, value in label2id.items()
+        }
+
+    return _label_mapping
 
 def _text_to_ids(text: str, word2idx: dict) -> list[int]:
     tokens = text.split()
@@ -156,7 +164,7 @@ def _pad_sequence(sequence: list[int], pad_idx: int) -> list[int]:
 def _predict_bilstm(text: str, *, model_name: str) -> str:
     model, word2idx = _load_bilstm(model_name)
 
-    _, _, label_mapping = _load_classical()
+    label_mapping = _load_labels()
 
     cleaned_text = clean_text_lstm(text)
 
@@ -184,7 +192,7 @@ def _predict_classical(text: str) -> str:
 def _predict_distilbert(text: str) -> str:
     model, tokenizer = _load_distilbert()
     
-    _, _, label_mapping = _load_classical()
+    label_mapping = _load_labels()
 
     cleaned_text = clean_text_transformer(text)
 
@@ -201,7 +209,7 @@ def _predict_distilbert(text: str) -> str:
         for key, value in inputs.items()
     }
 
-    with torch.no_grad():
+    with torch.inference_mode():
         outputs = model(**inputs)
 
         prediction = torch.argmax(

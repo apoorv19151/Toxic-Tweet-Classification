@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.inference import (
     predict,
@@ -8,12 +8,16 @@ from src.inference import (
 
 app = FastAPI(
     title="Cyberbullying Tweet Classifier",
-    description="API for classifying tweets using different NLP models.",
+    description="API for classifying tweets into six cyberbullying categories using different NLP models.",
     version="1.0.0"
 )
 
 class PredictionRequest(BaseModel):
-    text: str
+    text: str = Field(
+        ...,
+        min_length=1,
+        description="Tweet text to classify"
+    )
     model: str = DEFAULT_MODEL
 
 class PredictionResponse(BaseModel):
@@ -22,8 +26,13 @@ class PredictionResponse(BaseModel):
 @app.get("/")
 def home():
     return {
-        "message": "Cyberbullying Tweet Classifier API"
+        "message": "Cyberbullying Tweet Classifier API",
+        "satus": "running"
     }
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post(
     "/predict",
@@ -41,7 +50,7 @@ def classify(request: PredictionRequest):
         
     try:
         prediction = predict(
-            request.text,
+            text,
             model_name=request.model,
         )
 
